@@ -148,7 +148,7 @@ fn derive_named(
             }
 
             fn apply(&mut self, diff: &Self::Repr) {
-                #(self.#names.apply(&diff.#diff_names);)*
+                #(<#types as #diff_path::Diff>::apply(&mut self.#names, &diff.#diff_names);)*
             }
 
             fn identity() -> Self {
@@ -208,7 +208,7 @@ fn derive_unnamed(
             }
 
             fn apply(&mut self, diff: &Self::Repr) {
-                #(self.#numbers.apply(&diff.#numbers);)*
+                #(<#types as #diff_path::Diff>::apply(&mut self.#numbers, &diff.#numbers);)*
             }
 
             fn identity() -> Self {
@@ -382,8 +382,8 @@ fn derive_enum(
                     .collect::<Vec<_>>();
                 quote! {
                     Self::Repr::#ident{#(#i: #b),*} => {
-                        if let Self::#ident{#(#i: #a),*} = self {
-                            #(#a.apply(#b));*;
+                        if let Self::#ident{#(#i: ref mut #a),*} = self {
+                            #(<#t as #diff_path::Diff>::apply(#a, #b));*;
                         } else {
                             *self = Self::#ident{#(#i: <#t as #diff_path::Diff>::identity().apply_new(#b)),*};
                         }
@@ -400,8 +400,8 @@ fn derive_enum(
                     .collect::<Vec<_>>();
                 quote! {
                     Self::Repr::#ident(#(#b),*) => {
-                        if let Self::#ident(#(#a),*) = self {
-                            #(#a.apply(#b));*;
+                        if let Self::#ident(#(ref mut #a),*) = self {
+                            #(<#t as #diff_path::Diff>::apply(#a, #b));*;
                         } else {
                             *self = Self::#ident(#(<#t as #diff_path::Diff>::identity().apply_new(#b)),*);
                         }
